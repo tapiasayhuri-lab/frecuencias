@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>TuProfe20 Lab | Ejercicio 18 - Tabla de Frecuencias</title>
+  <!-- KaTeX para renderizado matemático de alta calidad -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Nunito', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #312e81 45%, #831843 100%);
+      color: #0f172a;
+      user-select: none;
+    }
+    button, select { font-family: inherit; }
+
+    .app { width: 100vw; height: 100dvh; position: relative; overflow: hidden; }
+    .floaters { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+    .floaters span {
+      position: absolute; display: block; width: 18px; height: 18px; border-radius: 50%;
+      background: rgba(255, 255, 255, .12); animation: floatUp linear infinite;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(105vh) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      100% { transform: translateY(-15vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* Vista Lab */
+    .lab { position: absolute; inset: 0; z-index: 1; padding: 14px; display: flex; flex-direction: column; }
+    .labTop {
+      position: relative; z-index: 2; width: min(98%, 1450px); margin: 0 auto 8px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .brandpill {
+      display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 18px;
+      border: 2px solid rgba(250, 204, 21, .5); background: rgba(255, 255, 255, .12);
+      backdrop-filter: blur(10px); color: #fde047; font-weight: 900; font-size: 19px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .25);
+    }
+    .stage {
+      color: #fff; background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .25);
+      border-radius: 12px; padding: 9px 15px; font-weight: 900; letter-spacing: .04em;
+    }
+    .miniBtn {
+      border: 2px solid rgba(255, 255, 255, .26); background: rgba(255, 255, 255, .14); color: #fff;
+      padding: 10px 14px; border-radius: 18px; font-weight: 900; cursor: pointer;
+      backdrop-filter: blur(8px); box-shadow: 0 10px 24px rgba(0, 0, 0, .18); transition: .2s transform;
+    }
+    .miniBtn:hover { transform: translateY(-2px); }
+
+    /* Tablero Principal */
+    .board {
+      position: relative; z-index: 2; width: min(98%, 1450px); margin: 0 auto; flex: 1; min-height: 0;
+      background: #fff; border: 6px solid #f8fafc; border-radius: 38px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, .45); overflow: hidden; display: flex; flex-direction: column;
+    }
+    .boardHead {
+      background: #0f172a; color: #fff; border-bottom: 4px solid #06b6d4;
+      padding: 12px 22px 14px; box-shadow: 0 8px 18px rgba(0, 0, 0, .2);
+    }
+    .boardMeta {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      max-width: 1180px; margin: 0 auto 6px auto;
+    }
+    .topBadge {
+      display: inline-block; padding: 5px 10px; border-radius: 10px; font-size: 12px;
+      font-weight: 900; letter-spacing: .08em; text-transform: uppercase;
+    }
+    .blockTag { background: #06b6d4; color: #082f49; }
+    .typeTag { background: rgba(255, 255, 255, .14); color: #fde68a; }
+    .enunciado {
+      max-width: 1180px; margin: 0 auto; text-align: center;
+      font-size: clamp(18px, 2vw, 27px); font-weight: 800; line-height: 1.32;
+    }
+    .enunciado highlight { color: #fde047; }
+
+    /* Cuerpo Dividido */
+    .boardBody { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.05fr 0.95fr; background: #f8fafc; }
+    .half { min-width: 0; min-height: 0; display: flex; flex-direction: column; position: relative; }
+    .half.left { border-right: 2px solid rgba(148, 163, 184, .35); }
+    .panelTitle {
+      padding: 12px 18px; border-bottom: 2px solid rgba(203, 213, 225, .7);
+      background: linear-gradient(90deg, #ffffff, #f1f5f9); color: #0f172a;
+      font-size: clamp(17px, 1.6vw, 22px); font-weight: 900;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .panelTitle small { font-size: 13px; color: #475569; }
+
+    /* Pasos Izquierda */
+    .stepsArea {
+      flex: 1; min-height: 0; overflow: auto; padding: 16px 18px;
+      display: flex; flex-direction: column; gap: 12px;
+      background: radial-gradient(circle at center, rgba(15, 23, 42, .03) 2px, transparent 2px);
+      background-size: 22px 22px;
+    }
+    .step {
+      background: #fff; border: 2px solid #e2e8f0; border-radius: 22px; padding: 14px 18px;
+      box-shadow: 0 10px 22px rgba(15, 23, 42, .08); animation: slideIn .28s ease-out both;
+    }
+    .step.current { border-color: #7c3aed; background: #faf5ff; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+    .stepWhy {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+      color: #334155; font-size: clamp(14px, 1.15vw, 17px); font-weight: 800;
+    }
+    .stepWhy b {
+      width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+      background: #2563eb; color: #fff; flex: 0 0 auto; font-size: 14px;
+    }
+    .step.current .stepWhy b { background: #7c3aed; }
+    .mathLine { font-size: clamp(19px, 1.85vw, 28px); color: #0f172a; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+    .mathLine .katex-display { margin: .25em 0; }
+    .emptyBox { flex: 1; display: grid; place-items: center; text-align: center; color: #64748b; padding: 20px; }
+    .emptyBox strong { font-size: clamp(22px, 2vw, 30px); color: #1e293b; display: block; margin-bottom: 8px; }
+    .notice {
+      background: #f0fdf4; border: 2px solid #86efac; color: #166534;
+      border-radius: 16px; padding: 12px 16px; font-weight: 900; text-align: center; font-size: 16px;
+    }
+
+    /* Esquema Visual Derecha */
+    .graphWrap { flex: 1; min-height: 0; padding: 12px 18px 8px; display: flex; flex-direction: column; overflow: auto; }
+    .graphTitle { text-align: center; color: #4338ca; font-size: 16px; font-weight: 900; margin-bottom: 8px; }
+    .graphBox {
+      flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: linear-gradient(180deg, #fff, #f8fafc); border: 2px solid #e2e8f0;
+      border-radius: 24px; padding: 14px; box-shadow: inset 0 0 0 1px #fff; gap: 14px;
+    }
+
+    /* Tabla Estadística Estilizada */
+    .freqTable {
+      width: 100%; max-width: 470px; border-collapse: separate; border-spacing: 0;
+      border-radius: 18px; overflow: hidden; border: 3px solid #1e293b;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, .1); font-size: clamp(15px, 1.3vw, 19px);
+    }
+    .freqTable th {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0f172a;
+      font-weight: 900; padding: 10px 12px; border-bottom: 3px solid #1e293b;
+    }
+    .freqTable th:not(:first-child), .freqTable td:not(:first-child) { border-left: 2px solid #cbd5e1; }
+    .freqTable td { padding: 9px 12px; text-align: center; font-weight: 800; border-bottom: 1px solid #e2e8f0; }
+    .freqTable tr.row-rojo { background: #fff1f2; }
+    .freqTable tr.row-azul { background: #f0f9ff; }
+    .freqTable tr.row-verde { background: #ecfdf5; }
+    .freqTable tr.row-amarillo { background: #fefce8; }
+    .freqTable tr.row-total { background: #0f172a; color: #fde047; font-weight: 900; }
+    .freqTable tr.row-total td { border-bottom: none; border-top: 3px solid #1e293b; }
+    .colorDot { display: inline-block; width: 13px; height: 13px; border-radius: 50%; margin-right: 7px; vertical-align: middle; }
+    .valPill {
+      display: inline-block; padding: 2px 12px; border-radius: 10px; font-weight: 900;
+      transition: all .35s cubic-bezier(.34, 1.56, .64, 1);
+    }
+    .valUnknown { background: #e2e8f0; color: #475569; font-style: italic; }
+    .valSolvedA { background: #e11d48; color: #fff; transform: scale(1.08); box-shadow: 0 4px 10px rgba(225, 29, 72, .35); }
+    .valSolvedX { background: #059669; color: #fff; transform: scale(1.08); box-shadow: 0 4px 10px rgba(5, 150, 105, .35); }
+    .valSolvedB { background: #7c3aed; color: #fff; transform: scale(1.08); box-shadow: 0 4px 10px rgba(124, 58, 237, .35); }
+
+    /* Alternativas A - E */
+    .optionsRow {
+      display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+    }
+    .optTag {
+      padding: 5px 12px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff;
+      font-weight: 900; font-size: 14px; color: #334155; transition: .3s;
+    }
+    .optTag.win {
+      background: #16a34a; color: #fff; border-color: #15803d; transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(22, 163, 74, .4);
+    }
+
+    .graphTip {
+      margin-top: 8px; padding: 10px 14px; border-radius: 16px; border: 2px solid #bfdbfe;
+      background: #eff6ff; color: #1d4ed8; font-size: 14px; font-weight: 800;
+    }
+
+    /* Controles Inferiores */
+    .controls {
+      padding: 10px 16px; border-top: 2px solid rgba(203, 213, 225, .7); background: #fff;
+      display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    }
+    .group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .ctrl {
+      border: none; border-radius: 14px; padding: 10px 15px; font-size: 15px; font-weight: 900;
+      cursor: pointer; transition: .18s; box-shadow: 0 4px 0 rgba(15, 23, 42, .12);
+    }
+    .ctrl:disabled { opacity: .45; cursor: not-allowed; }
+    .ctrl:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+    .ctrl.main { background: #2563eb; color: #fff; }
+    .ctrl.alt { background: #fff; color: #334155; border: 2px solid #cbd5e1; }
+    .ctrl.gold { background: #facc15; color: #713f12; }
+    .progressShell { width: 180px; height: 13px; background: #dbeafe; border-radius: 999px; overflow: hidden; }
+    .progressBar { height: 100%; background: linear-gradient(90deg, #22d3ee, #2563eb); width: 0%; transition: width .25s; }
+
+    @media (max-width: 900px) {
+      .boardBody { grid-template-columns: 1fr; overflow: auto; }
+      .half.left { border-right: none; border-bottom: 2px solid rgba(148, 163, 184, .35); min-height: 240px; }
+      .half.right { min-height: 320px; }
+      .board { overflow: auto; }
+      .stepsArea { max-height: 36vh; }
+    }
+    @media (max-width: 640px) {
+      .lab { padding: 8px; }
+      .board { border-width: 5px; border-radius: 22px; }
+      .enunciado { font-size: 16px; }
+      .panelTitle { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="floaters" id="floaters"></div>
+
+    <section class="lab" id="labView">
+      <div class="labTop">
+        <span class="brandpill">🚀 TuProfe20 Lab · Aula Estadística</span>
+        <span class="stage">EJERCICIO 18 · TABLA DE FRECUENCIAS</span>
+        <button class="miniBtn" id="toggleMute">🔊 Sonido</button>
+      </div>
+
+      <div class="board">
+        <div class="boardHead">
+          <div class="boardMeta">
+            <span class="topBadge blockTag">ESTADÍSTICA DESCRIPTIVA · FRECUENCIAS</span>
+            <span class="topBadge typeTag">HALLA a, x Y EL VALOR DE b</span>
+          </div>
+          <div class="enunciado">
+            La tabla incompleta muestra los colores favoritos de <highlight>25 personas</highlight>. Halla la frecuencia absoluta (<highlight>x</highlight>) de los que prefieren el color <highlight>"Verde"</highlight> y calcula además el valor de <highlight>b</highlight>.
+          </div>
+        </div>
+
+        <div class="boardBody">
+          <!-- Mitad Izquierda: Resolución paso a paso -->
+          <div class="half left">
+            <div class="panelTitle">✍️ Resolución paso a paso <small id="stepMeta">0 de 5 pasos</small></div>
+            <div class="stepsArea" id="stepsArea"></div>
+          </div>
+
+          <!-- Mitad Derecha: Tabla Interactiva + Distribución Visual -->
+          <div class="half right">
+            <div class="panelTitle">📊 Tabla y distribución de datos <small>n = 25 personas</small></div>
+            <div class="graphWrap">
+              <div class="graphTitle" id="graphTitle">Observa cómo se completa la tabla de frecuencias.</div>
+              <div class="graphBox" id="graphBox"></div>
+              <div class="optionsRow" id="optionsRow">
+                <span class="optTag">A. 8</span>
+                <span class="optTag">B. 6</span>
+                <span class="optTag">C. 5</span>
+                <span class="optTag">D. 9</span>
+                <span class="optTag" id="optE">E. 7</span>
+              </div>
+              <div class="graphTip" id="graphTip"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de Controles -->
+        <div class="controls">
+          <div class="group">
+            <button class="ctrl alt" id="prevStep">↶ Paso anterior</button>
+            <button class="ctrl main" id="nextStep">Siguiente paso ▶</button>
+            <button class="ctrl gold" id="solveAll">Resolver todo ★</button>
+            <button class="ctrl alt" id="restart">↻ Reiniciar</button>
+          </div>
+          <div class="group">
+            <div class="progressShell"><div class="progressBar" id="progressBar"></div></div>
+            <strong id="progressTxt">0 / 5</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let revealed = 0;
+
+    // 5 Pasos detallados incluyendo a, x y b
+    const STEPS = [
+      {
+        why: 'Identificamos el total de encuestados (n = 25) y la relación entre frecuencia absoluta y relativa.',
+        math: 'n = 25 \\qquad \\text{y} \\qquad h_i = \\frac{f_i}{n} \\;\\Rightarrow\\; f_i = n \\cdot h_i'
+      },
+      {
+        why: 'Calculamos "a" (frecuencia absoluta del color Rojo) usando su frecuencia relativa h₁ = 0.32.',
+        math: 'a = 25 \\times 0.32 = 25 \\times \\frac{32}{100} = 8'
+      },
+      {
+        why: 'La suma de todas las frecuencias absolutas debe ser igual al total n = 25. Despejamos "x" (Verde).',
+        math: 'a + 6 + x + 4 = 25 \\;\\Rightarrow\\; 8 + 6 + x + 4 = 25 \\;\\Rightarrow\\; 18 + x = 25 \\;\\Rightarrow\\; \\boxed{x = 7}'
+      },
+      {
+        why: 'Ahora hallamos el valor de "b" (frecuencia relativa del color Verde) dividiendo x entre el total n.',
+        math: 'b = \\frac{x}{n} = \\frac{7}{25} = \\frac{7 \\times 4}{25 \\times 4} = \\frac{28}{100} = \\boxed{0.28}'
+      },
+      {
+        why: 'Verificamos que la suma de todas las frecuencias relativas sea exactamente 1.00.',
+        math: '\\sum h_i = 0.32 + 0.24 + \\mathbf{0.28} + 0.16 = 1.00 \\quad \\checkmark'
+      }
+    ];
+
+    function math(tex, el, display = false) {
+      if (window.katex) {
+        try {
+          window.katex.render(tex, el, { displayMode: display, throwOnError: false, strict: 'ignore' });
+          return;
+        } catch (e) {}
+      }
+      el.textContent = tex;
+    }
+
+    function createFloaters() {
+      const f = $('floaters');
+      for (let i = 0; i < 16; i++) {
+        const s = document.createElement('span');
+        s.style.left = Math.random() * 100 + '%';
+        s.style.animationDuration = (10 + Math.random() * 18) + 's';
+        s.style.animationDelay = -Math.random() * 20 + 's';
+        f.appendChild(s);
+      }
+    }
+
+    // Construye la tabla interactiva
+    function buildVisualScheme() {
+      const hasA = revealed >= 2;
+      const hasX = revealed >= 3;
+      const hasB = revealed >= 4;
+
+      const cellA = hasA
+        ? `<span class="valPill valSolvedA">8</span>`
+        : `<span class="valPill valUnknown">a</span>`;
+
+      const cellX = hasX
+        ? `<span class="valPill valSolvedX">7</span>`
+        : `<span class="valPill valUnknown">x</span>`;
+
+      const cellB = hasB
+        ? `<span class="valPill valSolvedB">0.28</span>`
+        : `<span class="valPill valUnknown">b</span>`;
+
+      return `
+        <table class="freqTable" aria-label="Tabla de frecuencias del Ejercicio 18">
+          <thead>
+            <tr>
+              <th style="text-align:left">Color</th>
+              <th>f<sub>i</sub> (Absoluta)</th>
+              <th>h<sub>i</sub> (Relativa)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-rojo">
+              <td style="text-align:left"><span class="colorDot" style="background:#f43f5e"></span>Rojo</td>
+              <td>${cellA}</td>
+              <td>0.32</td>
+            </tr>
+            <tr class="row-azul">
+              <td style="text-align:left"><span class="colorDot" style="background:#0284c7"></span>Azul</td>
+              <td>6</td>
+              <td>0.24</td>
+            </tr>
+            <tr class="row-verde">
+              <td style="text-align:left"><span class="colorDot" style="background:#10b981"></span>Verde</td>
+              <td>${cellX}</td>
+              <td>${cellB}</td>
+            </tr>
+            <tr class="row-amarillo">
+              <td style="text-align:left"><span class="colorDot" style="background:#facc15"></span>Amarillo</td>
+              <td>4</td>
+              <td>0.16</td>
+            </tr>
+            <tr class="row-total">
+              <td style="text-align:left">TOTAL (n)</td>
+              <td>25</td>
+              <td>${hasB ? '1.00 ✓' : '1.00'}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    function render() {
+      const area = $('stepsArea');
+      area.innerHTML = '';
+
+      if (!revealed) {
+        area.innerHTML = `
+          <div class="emptyBox">
+            <div>
+              <strong>¿Cómo empezamos?</strong>
+              <p>Presiona <b>Siguiente paso</b> para hallar primero <b>a</b>, luego <b>x</b> y finalmente <b>b</b>.</p>
+              <p>Observa cómo se va completando la tabla de la derecha.</p>
+            </div>
+          </div>`;
+      } else {
+        STEPS.slice(0, revealed).forEach((s, i) => {
+          const d = document.createElement('div');
+          d.className = 'step' + (i === revealed - 1 ? ' current' : '');
+          d.innerHTML = `<div class="stepWhy"><b>${i + 1}</b><span>${s.why}</span></div><div class="mathLine"></div>`;
+          area.appendChild(d);
+          math(s.math, d.querySelector('.mathLine'), true);
+        });
+
+        if (revealed === 5) {
+          const d = document.createElement('div');
+          d.className = 'notice';
+          d.textContent = '✓ Respuesta: x = 7 (Alternativa E) y además b = 0.28.';
+          area.appendChild(d);
+        }
+        area.scrollTop = area.scrollHeight;
+      }
+
+      $('graphBox').innerHTML = buildVisualScheme();
+      $('stepMeta').textContent = `${revealed} de 5 pasos`;
+      $('progressTxt').textContent = `${revealed} / 5`;
+      $('progressBar').style.width = (revealed * 20) + '%';
+      $('nextStep').disabled = revealed === 5;
+      $('prevStep').disabled = revealed === 0;
+
+      // Resaltar alternativa E cuando x ya se resolvió
+      $('optE').classList.toggle('win', revealed >= 3);
+
+      // Textos guía dinámicos en el panel derecho
+      if (revealed === 0) {
+        $('graphTitle').textContent = 'La tabla se completará conforme avances paso a paso.';
+        $('graphTip').textContent = 'Recuerda: la suma de las frecuencias absolutas (fᵢ) es 25 y la de las relativas (hᵢ) es 1.00.';
+      } else if (revealed === 1) {
+        $('graphTitle').textContent = 'Identificamos la fórmula clave: fᵢ = n · hᵢ';
+        $('graphTip').textContent = 'Como conocemos h₁ = 0.32 y n = 25, podemos hallar "a" multiplicando ambos valores.';
+      } else if (revealed === 2) {
+        $('graphTitle').textContent = '¡Hallamos a = 8! Ya tenemos 18 personas ubicadas.';
+        $('graphTip').textContent = 'Con a = 8, Azul = 6 y Amarillo = 4 suman 18 personas. Faltan 7 personas para llegar a 25.';
+      } else if (revealed === 3) {
+        $('graphTitle').textContent = '¡Hallamos x = 7! Marcamos la alternativa E.';
+        $('graphTip').textContent = 'La frecuencia absoluta del color Verde es x = 7. Ahora calculemos su frecuencia relativa "b".';
+      } else if (revealed === 4) {
+        $('graphTitle').textContent = '¡Hallamos b = 0.28! Tabla completamente llena.';
+        $('graphTip').textContent = 'Dividiendo x = 7 entre n = 25 obtenemos b = 0.28 (que equivale al 28% del total).';
+      } else {
+        $('graphTitle').textContent = '¡Ejercicio resuelto y comprobado al 100%!';
+        $('graphTip').textContent = 'Resumen final: a = 8, x = 7 (Alternativa E) y b = 0.28. Todas las sumas cuadran.';
+      }
+    }
+
+    $('nextStep').onclick = () => { revealed = Math.min(5, revealed + 1); render(); };
+    $('prevStep').onclick = () => { revealed = Math.max(0, revealed - 1); render(); };
+    $('solveAll').onclick = () => { revealed = 5; render(); };
+    $('restart').onclick = () => { revealed = 0; render(); };
+
+    // Efectos de sonido sintetizados con Web Audio API
+    let soundEnabled = true, audioContext = null;
+    function playSound(kind = 'click') {
+      if (!soundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        if (!audioContext) audioContext = new AudioCtx();
+        if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+        const now = audioContext.currentTime;
+        const notes = kind === 'success' ? [660, 830, 1046] : kind === 'step' ? [520, 710] : kind === 'draw' ? [360] : [440, 600];
+        notes.forEach((freq, i) => {
+          const o = audioContext.createOscillator(), gain = audioContext.createGain();
+          const start = now + i * .055, end = start + (kind === 'draw' ? .065 : .115);
+          o.type = 'sine'; o.frequency.setValueAtTime(freq, start);
+          gain.gain.setValueAtTime(.0001, start);
+          gain.gain.exponentialRampToValueAtTime(kind === 'draw' ? .018 : .075, start + .013);
+          gain.gain.exponentialRampToValueAtTime(.0001, end);
+          o.connect(gain); gain.connect(audioContext.destination); o.start(start); o.stop(end + .01);
+        });
+      } catch (e) {}
+    }
+    function syncSound() { $('toggleMute').textContent = soundEnabled ? '🔊 Sonido' : '🔇 Silencio'; }
+    function toggleSound() { soundEnabled = !soundEnabled; syncSound(); if (soundEnabled) playSound('success'); }
+    $('toggleMute').onclick = toggleSound;
+
+    document.addEventListener('click', ev => {
+      if (ev.target.closest('#toggleMute')) return;
+      if (ev.target.closest('button,select')) {
+        if (ev.target.closest('#solveAll')) playSound('success');
+        else if (ev.target.closest('#nextStep,#prevStep')) playSound('step');
+        else playSound('click');
+      }
+    }, true);
+
+    addEventListener('keydown', ev => {
+      if (ev.key === 'ArrowRight') $('nextStep').click();
+      if (ev.key === 'ArrowLeft') $('prevStep').click();
+    });
+
+    function init() { createFloaters(); syncSound(); render(); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  </script>
+</body>
+</html>
